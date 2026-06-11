@@ -189,7 +189,7 @@ canvas#view{display:block;background:#e7e0cd}
 .rail button:hover{transform:translateY(-3px)}
 .rail button[aria-pressed="true"]{outline:2px solid var(--cadmium-hi);outline-offset:1px}
 .rail button:focus-visible{outline:2px solid var(--cadmium-hi);outline-offset:2px}
-.rail img{width:100%;display:block;background:#e7e0cd}
+.rail img{width:100%;height:80px;object-fit:contain;display:block;background:#e7e0cd}
 .rail .t{
   display:block;font-size:9.5px;color:#5d564a;padding-top:4px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
@@ -351,17 +351,19 @@ const KINDS={
 const PALETTES={
   convergence:{
     name:"Convergence", note:"cadmium · cobalt · chrome yellow",
-    ground:"#e8dcc4", medium:"Oil and enamel on canvas",
+    ground:"#e4d5b8", medium:"Oil and enamel on canvas",
     swatches:["#e3b81e","#c63a1a","#44589e","#15110c"],
     layers:[
-      {c:"#15110c",kind:"fine",n:64,web:.3},
-      {c:"#e3b81e",kind:"mid", n:38,wash:.42,splash:.08},
-      {c:"#c63a1a",kind:"mid", n:32,wash:.45,splash:.1},
-      {c:"#44589e",kind:"fine",n:26,wash:.55},
-      {c:"#15110c",kind:"bold",n:38,web:.15,splash:.12},
-      {c:"#f5f0e2",kind:"mid", n:30,wash:.15,splash:.1},
-      {c:"#f5f0e2",kind:"fine",n:28,web:.3},
-      {c:"#15110c",kind:"fine",n:28,web:.35}
+      {c:"#15110c",kind:"fine",n:68,web:.3},
+      {c:"#e3b81e",kind:"mid", n:44,wash:.5,splash:.08},
+      {c:"#c63a1a",kind:"mid", n:38,wash:.52,splash:.1},
+      {c:"#44589e",kind:"mid", n:30,wash:.58},
+      {c:"#15110c",kind:"bold",n:44,web:.12,splash:.12},
+      {c:"#f5f0e2",kind:"mid", n:16,wash:.14,splash:.1},
+      {c:"#f5f0e2",kind:"fine",n:12,web:.2},
+      {c:"#e3b81e",kind:"mid", n:14,wash:.5},
+      {c:"#c63a1a",kind:"mid", n:12,wash:.5,splash:.1},
+      {c:"#15110c",kind:"fine",n:36,web:.38}
     ]
   },
   number31:{
@@ -432,14 +434,51 @@ let genId=0;
    A work is fully reproducible from {seed, format, palette, dyn}, so we
    persist recipes + thumbnails, never pixels. localStorage is guarded:
    where it's unavailable the ledge still works for the current session. */
-const LS_KEY="drip-atelier-ledge-v6";
-let gallery=(()=>{ 
-  try{const raw=window.localStorage&&localStorage.getItem(LS_KEY);
-      const g=raw?JSON.parse(raw):[];
-      return Array.isArray(g)?g.slice(0,5):[];}
-  catch(e){return [];}
-})();
-function persistGallery(){
+const LS_KEY="drip-atelier-ledge-v9";
+/* The ledge can be communal. Storage adapter, in order of preference:
+     1. window.storage  — shared artifact storage (e.g. claude.ai)
+     2. /api/ledge      — Vercel serverless function backed by KV (README)
+     3. localStorage    — this browser only
+   The app probes 1 then 2 at boot and falls back gracefully, so the same
+   file works as an artifact, on a KV-equipped Vercel deploy, and on any
+   plain static host. */
+const HAS_ARTIFACT=!!(typeof window!=="undefined"&&window.storage&&window.storage.get&&window.storage.set);
+let LEDGE_MODE=HAS_ARTIFACT?"artifact":"local";
+let gallery=[];
+try{const raw=window.localStorage&&localStorage.getItem(LS_KEY);
+    const g=raw?JSON.parse(raw):[];
+    gallery=Array.isArray(g)?g.slice(0,5):[];}
+catch(e){gallery=[];}
+
+async function apiFetch(method,body){
+  const ctrl=new AbortController();
+  const tm=setTimeout(()=>ctrl.abort(),3500);
+  try{
+    const r=await fetch("/api/ledge",{
+      method,
+      headers:body?{"Content-Type":"application/json"}:undefined,
+      body:body?JSON.stringify(body):undefined,
+      signal:ctrl.signal
+    });
+    if(!r.ok)throw new Error("api "+r.status);
+    return await r.json();
+  }finally{clearTimeout(tm);}
+}
+async function fetchLedge(){
+  if(LEDGE_MODE==="artifact"){
+    try{
+      const r=await window.storage.get(LS_KEY,true);
+      const g=r&&r.value?JSON.parse(r.value):[];
+      return Array.isArray(g)?g.slice(0,5):[];
+    }catch(e){return [];}
+  }
+  if(LEDGE_MODE==="remote"){
+    try{const g=await apiFetch("GET");return Array.isArray(g)?g.slice(0,5):[];}
+    catch(e){return gallery;}
+  }
+  return gallery;
+}
+function persistLocal(){
   try{window.localStorage&&localStorage.setItem(LS_KEY,JSON.stringify(gallery));}catch(e){}
 }
 
@@ -635,7 +674,10 @@ function* wash(ctx,opts){
   const {W,H,u,rgb,kind,wet}=opts;
   const RB=R(14,58)*u;
   const x=opts._cx??R(.02,.98)*W, y=opts._cy??R(.02,.98)*H;
-  const aMax=kind==="fine"?.42:.7;
+  /* some throws are thick: buttery impasto dragged with the stick */
+  const impasto=kind!=="fine"&&rnd()<.45;
+  const aMin=impasto?.4:.28;
+  const aMax=impasto?.85:(kind==="fine"?.42:.7);
   /* the oil soaks ahead of the colour */
   ctx.fillStyle="rgba(96,72,40,0.05)";
   stamp(ctx,x,y,RB*1.15);
@@ -650,8 +692,9 @@ function* wash(ctx,opts){
     ctx.fillStyle=rgbStr(
       clamp(rgb[0]+R(-16,16),0,255),
       clamp(rgb[1]+R(-16,16),0,255),
-      clamp(rgb[2]+R(-16,16),0,255),R(.22,aMax));
+      clamp(rgb[2]+R(-16,16),0,255),R(aMin,aMax));
     stamp(ctx,px2,py2,rr);
+    if(impasto)hstamp(px2,py2,rr*.9,.1);
     if(rnd()<.2){ /* satellite bleed lobes */
       const aa=R(0,6.2832), dd=rr*R(.8,1.6);
       stamp(ctx,px2+Math.cos(aa)*dd,py2+Math.sin(aa)*dd,rr*R(.3,.6));
@@ -665,7 +708,31 @@ function* wash(ctx,opts){
     const aa=R(0,6.2832), d=RB*R(.72,1.05);
     stamp(ctx,x+Math.cos(aa)*d,y+Math.sin(aa)*d,u*R(1,3));
   }
-  hstamp(x,y,RB*.5,.03);
+  if(impasto){
+    /* knife-drag striations carved along one direction — grooves in
+       both the colour and the height, crests for the light to catch */
+    const sa=R(0,6.2832);
+    const ca=Math.cos(sa), sb=Math.sin(sa);
+    const span=RB*1.6;
+    const lines=Math.round(span/(2.6*u));
+    for(let k=0;k<lines;k++){
+      const off=(k-lines/2)*2.6*u+R(-.8,.8)*u;
+      const len=span*R(.5,1);
+      const sx0=x-sb*off-ca*len*.5, sy0=y+ca*off-sb*len*.5;
+      const segs=Math.round(len/(2*u));
+      ctx.fillStyle=rgbStr(rgb[0]*.74,rgb[1]*.74,rgb[2]*.78,.18);
+      for(let j=0;j<segs;j++){
+        const jx=sx0+ca*j*2*u+R(-.5,.5)*u, jy=sy0+sb*j*2*u+R(-.5,.5)*u;
+        if(Math.hypot(jx-x,jy-y)>RB*.95)continue;
+        stamp(ctx,jx,jy,.9*u);
+        hstamp(jx,jy,1.2*u,.16);
+      }
+      if((k&7)===0)yield;
+    }
+    hstamp(x,y,RB*.6,.08);
+  }else{
+    hstamp(x,y,RB*.5,.03);
+  }
   pushWet(wet,x,y,RB*.9,rgb[0],rgb[1],rgb[2]);
   /* masses often chain: a second blob bleeds off the first */
   if(!opts._chained&&rnd()<.35){
@@ -889,7 +956,7 @@ function* pour(ctx,opts){
       for(let i=0;i<=nSt;i++)
         stamp(ctx,plx+dx*i/nSt+R(-1,1)*w*.06,ply+dy*i/nSt+R(-1,1)*w*.06,w*.5*R(.95,1.05));
       if(w>2.6*u){ /* heavier ropes stand proud; hairlines lie flat */
-        const ha=Math.min((w/u-2.6)*.022+.03,.13);
+        const ha=Math.min((w/u-2.6)*.024+.03,.16);
         for(let i=0;i<=nSt;i+=2)
           hstamp(plx+dx*i/nSt,ply+dy*i/nSt,w*.64,ha);
       }
@@ -950,10 +1017,11 @@ function* finishRelief(ctx,hm,W,H,u,prog){
   const hd=src.data;
   const N=hw*hh;
 
-  /* wet paint relaxes: smooth the height field before lighting it */
+  /* wet paint relaxes — one gentle pass only, so knife-drag
+     striations survive into the lighting */
   let A=new Float32Array(N), B=new Float32Array(N);
   for(let i=0;i<N;i++)A[i]=hd[i*4];
-  for(let pass=0;pass<2;pass++){
+  for(let pass=0;pass<1;pass++){
     for(let y=0;y<hh;y++){
       const o=y*hw;
       for(let x=0;x<hw;x++){
@@ -1015,7 +1083,7 @@ function* finishRelief(ctx,hm,W,H,u,prog){
       const inv=1/Math.sqrt(gx*gx+gy*gy+1);
       const nx=-gx*inv, ny=-gy*inv, nz=inv;
       const thin=h<34;                 // bare canvas or a thin film
-      const rel=thin?.38:Math.min(.85,.4+h/170);
+      const rel=thin?.38:Math.min(1.05,.4+h/150);
       let lightA=0, darkA=0;
       /* Lambert: slopes toward the light brighten, away fall to shade */
       const d=(nx*Lx+ny*Ly+nz*Lz-Lz)*255*rel;
@@ -1024,8 +1092,9 @@ function* finishRelief(ctx,hm,W,H,u,prog){
         /* tight wet-enamel glints (Blinn-Phong, high exponent) */
         const sp=nx*Hx+ny*Hy+nz*Hz;
         if(sp>0){
-          const s2=sp*sp,s4=s2*s2,s8=s4*s4,s16=s8*s8;
-          lightA+=s16*s16*120;
+          const s2=sp*sp,s4=s2*s2,s8=s4*s4,s16=s8*s8,s32=s16*s16;
+          lightA+=s32*(70+Math.min(h,160)*.55);   // taller paint, hotter gloss
+          if(s32>.92&&h>110)lightA=200;           // crest glint
         }
         lightA=Math.max(lightA,2+Math.min(h*.012,5));  // gloss film
       }
@@ -1034,14 +1103,14 @@ function* finishRelief(ctx,hm,W,H,u,prog){
       if(ao>0)darkA+=Math.min(ao,38);
       /* cast shadow: march toward the light hunting for an occluder */
       let sh=0;
-      for(let t2=1;t2<=3;t2++){
+      for(let t2=1;t2<=5;t2++){
         const ox=x+sdx*t2, oy=y+sdy*t2;
         if(ox<0||oy<0||ox>=hw||oy>=hh)break;
-        const occ=A[oy*hw+ox]-h-22*t2;
+        const occ=A[oy*hw+ox]-h-16*t2;
         if(occ>sh)sh=occ;
       }
-      if(sh>0)darkA+=Math.min(sh*.6,55);
-      lightA=Math.min(lightA,120); darkA=Math.min(darkA,95);
+      if(sh>0)darkA+=Math.min(sh*.65,75);
+      lightA=Math.min(lightA,200); darkA=Math.min(darkA,115);
       const o=i*4;
       if(lightA>=darkA){od[o]=255;od[o+1]=250;od[o+2]=236;od[o+3]=lightA-darkA*.5;}
       else{od[o]=26;od[o+1]=18;od[o+2]=10;od[o+3]=darkA-lightA*.5;}
@@ -1170,11 +1239,19 @@ function* generate(seed,fmtKey,palKey,dyn,statusCb,prog={}){
   REL=hmx; RELU=u;
   LIGHT_ANG=-2.356+R(-.3,.3);         // this painting's key light
 
-  /* plan the whole session first so total progress is known (pacing) */
+  /* plan the whole session first so total progress is known (pacing).
+     The painter circles the canvas returning to every can all session
+     long: each action is stamped with a time — its layer's centre in
+     the session plus a wide spread, with occasional returns to any can
+     at any moment — and the plan is sorted by that clock. Broad
+     tendencies survive (grounds early, accents late) but no colour
+     ever arrives as a single stratum. */
   const plan=[];
-  for(let li=0;li<pal.layers.length;li++){
+  const Lcount=pal.layers.length;
+  for(let li=0;li<Lcount;li++){
     const L=pal.layers[li];
     const n=Math.max(10,Math.round(L.n*DENSITY*(.82+.55*dyn)*areaFactor*R(.85,1.2)));
+    const centre=(li+.5)/Lcount;
     for(let i=0;i<n;i++){
       const roll=rnd();
       const pSpray=.05+.22*dyn;
@@ -1186,18 +1263,22 @@ function* generate(seed,fmtKey,palKey,dyn,statusCb,prog={}){
       else if(roll<pSpray+pWash)type="wash";
       else if(roll<pSpray+pWash+pWeb)type="web";
       else if(roll<pSpray+pWash+pWeb+pSplash)type="splash";
-      plan.push({li,L,type});
+      const t=rnd()<.12
+        ?rnd()                                   // back to an old can
+        :clamp(centre+(rnd()+rnd()-1)*.5,0,1);   // near its phase
+      plan.push({li,L,type,t});
     }
   }
+  plan.sort((a,b)=>a.t-b.t);
   prog.total=plan.reduce((t,a)=>t+(a.type==="pour"?3:(a.type==="wash"||a.type==="web")?2:1),0)
              +Math.ceil(hm.height/64)
-             +4*(Math.ceil(hm.height/128)+Math.ceil(hm.width/128))+2;
+             +3*(Math.ceil(hm.height/128)+Math.ceil(hm.width/128))+2;
   prog.done=0;
 
   let lastLi=-1;
   for(const act of plan){
     const L=act.L;
-    if(act.li!==lastLi){lastLi=act.li;statusCb(act.li+1,pal.layers.length,L);}
+    if(act.li!==lastLi){lastLi=act.li;statusCb(0,0,L);}
     const [r,g,b]=jitterColor(L.c,10);
     const alpha=KINDS[L.kind].a;
     if(act.type==="spray"){
@@ -1225,9 +1306,13 @@ function* generate(seed,fmtKey,palKey,dyn,statusCb,prog={}){
    display, animation driver
    ========================================================= */
 function layoutView(){
+  if(!hi.width)return;
   const wrap=document.getElementById("framewrap");
   const stage=document.querySelector("main");
-  const hangGap=130; // placard + gaps
+  const placardEl=document.getElementById("placard");
+  /* measure what actually needs clearing: placard, its gap, and the
+     ledge itself — so portrait and square canvases never overlap it */
+  const hangGap=placardEl.offsetHeight+railEl.offsetHeight+64;
   const padX=wrap.clientWidth-view.clientWidth;
   const padY=wrap.clientHeight-view.clientHeight;
   const maxW=stage.clientWidth*.86-padX;
@@ -1285,10 +1370,14 @@ function startGeneration(opts={}){
   markActiveThumb();
 
   const prog={total:1,done:0};
+  let lastStatus=0;
   const it=generate(state.seed,state.format,state.palette,state.dyn,(li,total,L)=>{
+    const now=performance.now();
+    if(L&&now-lastStatus<300)return;
+    lastStatus=now;
     statusEl.innerHTML=entry
       ?`<span class="dot"></span>Rehanging <b>${esc(state.title)}</b>…`
-      :L?`<span class="dot"></span>Pouring layer <b>${li} / ${total}</b> — ${colorName(L)} in <b>${L.c}</b>`
+      :L?`<span class="dot"></span>Pouring — ${colorName(L)} in <b>${L.c}</b>`
         :`<span class="dot"></span>Raking light over the wet enamel…`;
   },prog);
 
@@ -1337,14 +1426,44 @@ function makeThumb(){
   c.drawImage(hi,0,0,t.width,t.height);
   try{return t.toDataURL("image/jpeg",.72);}catch(e){return "";}
 }
-function addToGallery(){
-  gallery.unshift({
+async function addToGallery(){
+  const entry={
     id:state.activeId, seed:state.seed, format:state.format,
     palette:state.palette, dyn:state.dyn, title:state.title,
     thumb:makeThumb()
-  });
-  gallery=gallery.slice(0,5);
-  persistGallery();
+  };
+  if(LEDGE_MODE==="artifact"){
+    /* refresh first so we never clobber another visitor's fresh pour */
+    const latest=await fetchLedge();
+    gallery=[entry,...latest.filter(e=>e.id!==entry.id)].slice(0,5);
+    try{await window.storage.set(LS_KEY,JSON.stringify(gallery),true);}catch(e){}
+  }else if(LEDGE_MODE==="remote"){
+    try{
+      const list=await apiFetch("POST",{entry});   // the server merges
+      gallery=Array.isArray(list)?list.slice(0,5):gallery;
+    }catch(e){ /* offline blip: keep the pour for this session */
+      gallery=[entry,...gallery.filter(x=>x.id!==entry.id)].slice(0,5);
+    }
+  }else{
+    gallery=[entry,...gallery.filter(x=>x.id!==entry.id)].slice(0,5);
+    persistLocal();
+  }
+  renderRail();
+}
+
+async function persistRename(id,title){
+  const e=gallery.find(g=>g.id===id);
+  if(e)e.title=title;
+  if(LEDGE_MODE==="artifact"){
+    try{await window.storage.set(LS_KEY,JSON.stringify(gallery),true);}catch(e2){}
+  }else if(LEDGE_MODE==="remote"){
+    try{
+      const list=await apiFetch("POST",{id,title});
+      gallery=Array.isArray(list)?list.slice(0,5):gallery;
+    }catch(e2){}
+  }else{
+    persistLocal();
+  }
   renderRail();
 }
 function renderRail(){
@@ -1352,7 +1471,9 @@ function renderRail(){
   if(!gallery.length){
     const d=document.createElement("div");
     d.className="empty";
-    d.textContent="Finished works will rest on this ledge.";
+    d.textContent=LEDGE_MODE!=="local"
+      ?"The five most recent pours by anyone in the atelier will rest here."
+      :"Finished works will rest on this ledge.";
     railEl.appendChild(d);
     return;
   }
@@ -1373,6 +1494,7 @@ function renderRail(){
     railEl.appendChild(b);
   }
   markActiveThumb();
+  layoutView();   // the rail's height may have changed
 }
 function markActiveThumb(){
   railEl.querySelectorAll("button").forEach(b=>
@@ -1386,7 +1508,7 @@ function commitTitle(){
   state.title=v;
   titleInput.value=v;
   const e=gallery.find(g=>g.id===state.activeId);
-  if(e&&e.title!==v){e.title=v;persistGallery();renderRail();}
+  if(e&&e.title!==v)persistRename(state.activeId,v);
   if(state.done)statusEl.innerHTML=`Renamed to <b>${esc(v)}</b>.`;
 }
 titleInput.addEventListener("change",commitTitle);
@@ -1639,6 +1761,29 @@ setChoice("format",state.format,document.getElementById("formatChips"));
 setChoice("palette",state.palette,document.getElementById("paletteChips"));
 setChoice("frame",state.frame,document.getElementById("frameChips"));
 renderRail();
+(async()=>{
+  if(LEDGE_MODE!=="artifact"){
+    /* probe the API once: present and healthy -> communal remote mode */
+    try{
+      const g=await apiFetch("GET");
+      if(Array.isArray(g)){LEDGE_MODE="remote";gallery=g.slice(0,5);}
+    }catch(e){/* no API here — stay with localStorage */}
+  }
+  if(LEDGE_MODE!=="local"){
+    document.querySelector(".fineprint").textContent+=
+      " The ledge below is communal: it holds the five most recent pours by anyone visiting this atelier, and titles are visible to everyone.";
+    const refresh=async()=>{
+      const latest=await fetchLedge();
+      if(JSON.stringify(gallery)!==JSON.stringify(latest)&&document.activeElement!==titleInput){
+        gallery=latest;
+        renderRail();
+      }
+    };
+    refresh();
+    setInterval(refresh,30000);
+  }
+  renderRail();
+})();
 startGeneration();
 </script>
 </body>

@@ -75,7 +75,12 @@ HTML/JS — no build step, no dependencies, ready for Vercel.
   occasional knot in the oak, gold leaf laid in squares with seams, patina
   and red bole wearing through at the corners, brushed satin black, warm
   gesso white — all under a carved profile with a burnished outer ridge and
-  shadowed inner step.
+  shadowed inner step. Every frame carries its own seeded wear: scuffs and
+  fine scratches, nicks bitten out of the outer edge, softly worn corners,
+  and per-style flaws (flaked gold leaf baring the red bole, yellowed
+  gesso, satin rubbed bright where it's gripped, pale chips at the oak
+  mitres). The on-screen frame is painted by the same code with the same
+  per-piece seed as the download — what you see is exactly what you save.
 - **Download** — one-click PNG export, named after the piece.
 - **The ledge** — the five most recent finished works rest on a rail below
   the wall; click one to rehang it instantly. Works are stored as tiny

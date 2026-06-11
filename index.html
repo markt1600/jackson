@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>The Drip Atelier — Generative Pollock Studio</title>
 <meta name="description" content="Generate museum-grade, high-resolution drip paintings in the manner of Jackson Pollock. Watch the pour happen live, frame it, download it.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -32,7 +32,10 @@ body{
   display:grid;
   grid-template-columns:330px 1fr;
   min-height:100vh;
+  min-height:100dvh;
+  overflow-x:hidden;
 }
+aside,main{min-width:0;max-width:100%}
 /* ---------- control rail ---------- */
 aside{
   background:linear-gradient(175deg,var(--ink-2),var(--ink) 60%);
@@ -58,9 +61,11 @@ aside{
   font-size:11px;letter-spacing:.22em;text-transform:uppercase;
   color:var(--ivory-dim);font-weight:600;
 }
-.chips{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.chips.wide{grid-template-columns:1fr}
+.chips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.chips.wide{grid-template-columns:minmax(0,1fr)}
 button.chip{
+  min-width:0;
+  overflow-wrap:anywhere;
   font-family:'Karla',sans-serif;
   background:var(--ink-3);
   color:var(--ivory);
@@ -147,22 +152,10 @@ canvas#view{display:block;background:#e7e0cd}
 /* frame styles (preview) */
 .framewrap.f-none{padding:0;background:transparent}
 .framewrap.f-none .liner{padding:0;background:transparent}
-.framewrap.f-black{padding:clamp(10px,1.4vw,22px);background:
-  repeating-linear-gradient(0deg, rgba(255,255,255,.022) 0 1px, transparent 1px 3px),
-  linear-gradient(160deg,#272217,#0f0c08 55%,#1c1810)}
-.framewrap.f-white{padding:clamp(10px,1.4vw,22px);background:
-  repeating-linear-gradient(0deg, rgba(180,168,144,.06) 0 1px, transparent 1px 3px),
-  linear-gradient(160deg,#fbf8f0,#ddd7c8 60%,#efeadd)}
-.framewrap.f-oak{padding:clamp(10px,1.5vw,24px);
-  background:
-   repeating-linear-gradient(90deg, rgba(60,40,15,.14) 0 2px, rgba(255,235,190,.09) 2px 5px, rgba(0,0,0,0) 5px 9px),
-   repeating-linear-gradient(0deg, rgba(60,40,15,.07) 0 1px, transparent 1px 5px),
-   linear-gradient(160deg,#b5905c,#8d6c40 55%,#a8854f)}
-.framewrap.f-gold{padding:clamp(12px,1.7vw,28px);
-  background:
-   repeating-linear-gradient(90deg, rgba(64,42,10,.16) 0 2px, rgba(255,240,180,.1) 2px 3px, transparent 3px 30px),
-   repeating-linear-gradient(45deg, rgba(255,240,180,.1) 0 3px, rgba(80,55,10,.12) 3px 6px),
-   linear-gradient(160deg,#7a5a18,#e7c75f 40%,#9c7724 75%,#c9a242)}
+.framewrap.f-black{padding:clamp(10px,1.4vw,22px);background:linear-gradient(160deg,#272217,#0f0c08 55%,#1c1810)}
+.framewrap.f-white{padding:clamp(10px,1.4vw,22px);background:linear-gradient(160deg,#fbf8f0,#ddd7c8 60%,#efeadd)}
+.framewrap.f-oak{padding:clamp(10px,1.5vw,24px);background:linear-gradient(160deg,#b5905c,#8d6c40 55%,#a8854f)}
+.framewrap.f-gold{padding:clamp(12px,1.7vw,28px);background:linear-gradient(160deg,#7a5a18,#e7c75f 40%,#9c7724 75%,#c9a242)}
 .framewrap.f-black .liner,.framewrap.f-white .liner,.framewrap.f-oak .liner,.framewrap.f-gold .liner{
   padding:clamp(4px,.5vw,8px);
   box-shadow:0 0 0 1px rgba(0,0,0,.25) inset;
@@ -203,7 +196,8 @@ canvas#view{display:block;background:#e7e0cd}
   background:var(--placard);
   color:var(--placard-ink);
   padding:14px 22px 13px;
-  min-width:230px;
+  min-width:min(230px,78vw);
+  max-width:calc(100vw - 32px);
   box-shadow:0 8px 22px -8px rgba(25,18,8,.45);
   border-radius:1px;
   text-align:left;
@@ -219,10 +213,24 @@ canvas#view{display:block;background:#e7e0cd}
 .placard .meta{font-size:11.5px;color:#5d564a;margin-top:5px;font-style:italic;font-family:'Karla',sans-serif}
 .placard .meta span{font-style:normal}
 @media (max-width:880px){
-  body{grid-template-columns:1fr;grid-template-rows:auto 1fr}
-  aside{flex-direction:column;border-right:none;border-bottom:1px solid var(--hairline);padding:24px 20px}
-  main{padding:30px 16px 120px;min-height:70vh}
-  .rail{justify-content:flex-start}
+  body{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr}
+  aside{
+    flex-direction:column;border-right:none;
+    border-bottom:1px solid var(--hairline);
+    overflow:visible;                       /* the page scrolls as one */
+    gap:20px;
+    padding:22px max(16px,env(safe-area-inset-right)) 20px max(16px,env(safe-area-inset-left));
+  }
+  button.chip{padding:9px 10px;font-size:13px}
+  .chip small{font-size:10.5px}
+  main{
+    padding:26px max(12px,env(safe-area-inset-right)) 110px max(12px,env(safe-area-inset-left));
+    min-height:70vh;min-height:72dvh;
+  }
+  .placard{padding:11px 16px 10px}
+  .rail{justify-content:flex-start;padding-bottom:max(14px,env(safe-area-inset-bottom))}
+  .rail button{width:84px}
+  .rail img{height:68px}
   .fineprint{margin-top:0}
 }
 @media (prefers-reduced-motion:reduce){
@@ -427,7 +435,7 @@ const FRAMES={
 };
 
 /* ---------- state ---------- */
-const state={format:"classic",palette:"convergence",frame:"none",seed:0,dyn:.6,title:"",activeId:null,done:false};
+const state={format:"classic",palette:"convergence",frame:"none",seed:0,frameSeed:1,dyn:.6,title:"",activeId:null,done:false};
 let genId=0;
 
 /* ---------- the ledge: last five works, stored as tiny recipes ----------
@@ -1315,7 +1323,8 @@ function layoutView(){
   const hangGap=placardEl.offsetHeight+railEl.offsetHeight+64;
   const padX=wrap.clientWidth-view.clientWidth;
   const padY=wrap.clientHeight-view.clientHeight;
-  const maxW=stage.clientWidth*.86-padX;
+  const frac=stage.clientWidth<700?.94:.86;   // phones get the width
+  const maxW=stage.clientWidth*frac-padX;
   const maxH=stage.clientHeight-hangGap-padY;
   const ar=hi.width/hi.height;
   let w=maxW,h=w/ar;
@@ -1325,7 +1334,30 @@ function layoutView(){
   view.style.width=w+"px";view.style.height=h+"px";
   view.width=Math.round(w*dpr);view.height=Math.round(h*dpr);
   blit();
+  updateFramePreview();
 }
+/* the on-screen frame is painted by the same code as the download,
+   with the same per-piece seed — what you see is what you save */
+function updateFramePreview(){
+  const wrap=document.getElementById("framewrap");
+  if(state.frame==="none"){
+    wrap.style.backgroundImage="";
+    return;
+  }
+  const w=Math.round(wrap.offsetWidth), h=Math.round(wrap.offsetHeight);
+  if(!w||!h)return;
+  const cs=getComputedStyle(wrap);
+  const fw=Math.max(6,parseFloat(cs.paddingLeft)||16);
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  const c2=document.createElement("canvas");
+  c2.width=Math.round(w*dpr); c2.height=Math.round(h*dpr);
+  const x2=c2.getContext("2d");
+  x2.scale(dpr,dpr);
+  paintFrameMaterial(x2,w,h,fw,state.frame,mulberry32(state.frameSeed));
+  wrap.style.backgroundImage=`url(${c2.toDataURL()})`;
+  wrap.style.backgroundSize="100% 100%";
+}
+
 function blit(){
   vctx.imageSmoothingEnabled=true;
   vctx.imageSmoothingQuality="high";
@@ -1347,6 +1379,7 @@ function startGeneration(opts={}){
   const myId=genId;
   const entry=opts.entry||null;
 
+  state.frameSeed=(Math.random()*0x7fffffff)|0;
   if(entry){ /* rehang a work from the ledge */
     state.seed=entry.seed;
     state.format=entry.format;
@@ -1541,6 +1574,206 @@ function frameGradient(ctx,style,x0,y0,x1,y1){
   for(const [o,c] of stops)g.addColorStop(o,c);
   return g;
 }
+/* paints the moulding — bases, material texture, carved profile, mitre
+   seams, and seeded real-world wear — identically for the on-screen
+   preview and the hi-res download (same per-piece seed = same frame). */
+function paintFrameMaterial(c,W,H,fw,style,fr){
+  /* four mitred moulding sides */
+  side(c,[[0,0],[W,0],[W-fw,fw],[fw,fw]],          frameGradient(c,style,0,0,0,fw));
+  side(c,[[0,H],[W,H],[W-fw,H-fw],[fw,H-fw]],      frameGradient(c,style,0,H,0,H-fw));
+  side(c,[[0,0],[fw,fw],[fw,H-fw],[0,H]],          frameGradient(c,style,0,0,fw,0));
+  side(c,[[W,0],[W,H],[W-fw,H-fw],[W-fw,fw]],      frameGradient(c,style,W,0,W-fw,0));
+
+  /* ---- material texture, clipped inside each mitred side ---- */
+  const sides2=[
+    {q:[[0,0],[W,0],[W-fw,fw],[fw,fw]],     b:[0,0,W,fw],    horiz:true},
+    {q:[[0,H],[W,H],[W-fw,H-fw],[fw,H-fw]], b:[0,H-fw,W,fw], horiz:true},
+    {q:[[0,0],[fw,fw],[fw,H-fw],[0,H]],     b:[0,0,fw,H],    horiz:false},
+    {q:[[W,0],[W,H],[W-fw,H-fw],[W-fw,fw]], b:[W-fw,0,fw,H], horiz:false}
+  ];
+  for(const sd of sides2){
+    c.save();
+    c.beginPath();
+    c.moveTo(sd.q[0][0],sd.q[0][1]);
+    for(let i=1;i<4;i++)c.lineTo(sd.q[i][0],sd.q[i][1]);
+    c.closePath();
+    c.clip();
+    const bx=sd.b[0],by=sd.b[1],bw=sd.b[2],bh=sd.b[3];
+    const along=sd.horiz?bw:bh, across=sd.horiz?bh:bw;
+    if(style==="oak"){
+      /* long wavy grain running the length of the moulding */
+      const strands=Math.round(across/3);
+      for(let k=0;k<strands;k++){
+        const base=fr()*across;
+        const amp=across*(.03+fr()*.1);
+        const fr2=.003+fr()*.01;
+        const ph=fr()*6.28;
+        c.fillStyle=fr()<.45
+          ?`rgba(82,58,28,${(.03+fr()*.05).toFixed(3)})`
+          :`rgba(242,214,168,${(.04+fr()*.07).toFixed(3)})`;
+        const th=fr()<.18?2.4:1.2;
+        for(let p=0;p<along;p+=3){
+          const off=base+Math.sin(p*fr2+ph)*amp;
+          if(sd.horiz)c.fillRect(bx+p,by+off,3,th);
+          else c.fillRect(bx+off,by+p,th,3);
+        }
+      }
+      /* the occasional knot */
+      const knots=Math.max(0,Math.round(along/(fw*16)-fr()));
+      for(let k=0;k<knots;k++){
+        const kp=fr()*along, kq=across*(.25+fr()*.5);
+        const kx=sd.horiz?bx+kp:bx+kq, ky=sd.horiz?by+kq:by+kp;
+        for(let rr2=1;rr2<=4;rr2++){
+          c.strokeStyle=`rgba(58,38,16,${(.16-rr2*.025).toFixed(3)})`;
+          c.lineWidth=1.4;
+          c.beginPath();
+          c.ellipse(kx,ky,rr2*fw*.05*(sd.horiz?1.8:1),rr2*fw*.05*(sd.horiz?1:1.8),0,0,6.2832);
+          c.stroke();
+        }
+      }
+    }else if(style==="gold"){
+      /* gold leaf laid in squares: seams, each leaf its own cast, patina */
+      const leaf=fw*1.6;
+      for(let p=fr()*leaf;p<along;p+=leaf*(0.85+fr()*.3)){
+        c.fillStyle="rgba(64,42,10,0.16)";
+        if(sd.horiz)c.fillRect(bx+p,by,1.6,bh); else c.fillRect(bx,by+p,bw,1.6);
+        c.fillStyle="rgba(255,240,180,0.10)";
+        if(sd.horiz)c.fillRect(bx+p+1.6,by,1.2,bh); else c.fillRect(bx,by+p+1.6,bw,1.2);
+        c.fillStyle=fr()<.5
+          ?`rgba(140,100,30,${(fr()*.07).toFixed(3)})`
+          :`rgba(255,236,170,${(fr()*.06).toFixed(3)})`;
+        if(sd.horiz)c.fillRect(bx+p,by,leaf,bh); else c.fillRect(bx,by+p,bw,leaf);
+      }
+      const sp2=Math.round(along*across/900);
+      for(let k=0;k<sp2;k++){
+        c.fillStyle=fr()<.5?"rgba(255,243,192,.2)":"rgba(86,56,12,.2)";
+        c.fillRect(bx+fr()*bw,by+fr()*bh,1.6,1.6);
+      }
+      /* red bole ground showing through at the worn corners */
+      c.fillStyle="rgba(112,46,22,0.14)";
+      for(const [cx2,cy2] of [[bx,by],[bx+bw,by],[bx,by+bh],[bx+bw,by+bh]]){
+        c.beginPath();c.arc(cx2,cy2,fw*.7,0,6.2832);c.fill();
+      }
+    }else if(style==="black"){
+      /* satin black, brushed along its length, with a quiet sheen */
+      const streaks=Math.round(across/2.5);
+      for(let k=0;k<streaks;k++){
+        const base=fr()*across;
+        c.fillStyle=fr()<.5
+          ?`rgba(96,88,68,${(.025+fr()*.045).toFixed(3)})`
+          :`rgba(0,0,0,${(.05+fr()*.07).toFixed(3)})`;
+        if(sd.horiz)c.fillRect(bx,by+base,bw,1); else c.fillRect(bx+base,by,1,bh);
+      }
+    }else{
+      /* white gesso: faint warm brush texture */
+      const streaks=Math.round(across/3);
+      for(let k=0;k<streaks;k++){
+        const base=fr()*across;
+        c.fillStyle=fr()<.5
+          ?`rgba(186,174,150,${(.03+fr()*.04).toFixed(3)})`
+          :`rgba(255,252,244,${(.04+fr()*.04).toFixed(3)})`;
+        if(sd.horiz)c.fillRect(bx,by+base,bw,1); else c.fillRect(bx+base,by,1,bh);
+      }
+    }
+    c.restore();
+  }
+  /* carved profile: burnished outer ridge, shadowed inner step */
+  c.strokeStyle="rgba(255,248,228,0.16)";
+  c.lineWidth=Math.max(1.5,fw*.06);
+  c.strokeRect(fw*.14,fw*.14,W-fw*.28,H-fw*.28);
+  c.strokeStyle="rgba(0,0,0,0.22)";
+  c.lineWidth=Math.max(1.5,fw*.05);
+  c.strokeRect(fw*.8,fw*.8,W-fw*1.6,H-fw*1.6);
+  /* mitre seams */
+  c.strokeStyle="rgba(0,0,0,.28)";
+  c.lineWidth=Math.max(1.5,fw*.018);
+  c.beginPath();
+  c.moveTo(0,0);c.lineTo(fw,fw);
+  c.moveTo(W,0);c.lineTo(W-fw,fw);
+  c.moveTo(0,H);c.lineTo(fw,H-fw);
+  c.moveTo(W,H);c.lineTo(W-fw,H-fw);
+  c.stroke();
+
+  /* ---- nobody's frame is perfect: seeded wear ---- */
+  const inBand=(x,y)=>x<fw||y<fw||x>W-fw||y>H-fw;
+  /* scuffs & fine scratches */
+  const scr=Math.round((W+H)/(fw*14))+3;
+  for(let i=0;i<scr;i++){
+    let sx2=fr()*W, sy2=fr()*H, tries=0;
+    while(!inBand(sx2,sy2)&&tries++<8){sx2=fr()*W;sy2=fr()*H;}
+    if(!inBand(sx2,sy2))continue;
+    const ang=fr()*6.2832, len=fw*(.25+fr()*.6);
+    const lite=fr()<.6;
+    c.fillStyle=lite?`rgba(255,250,232,${(.08+fr()*.1).toFixed(3)})`
+                    :`rgba(20,14,6,${(.08+fr()*.09).toFixed(3)})`;
+    const steps=Math.max(3,Math.round(len/1.5));
+    for(let j=0;j<steps;j++)
+      c.fillRect(sx2+Math.cos(ang)*j*1.5,sy2+Math.sin(ang)*j*1.5,1.2,1.2);
+  }
+  /* nicks bitten out of the outer edge */
+  const nicks=3+Math.round(fr()*5);
+  for(let i=0;i<nicks;i++){
+    const side2=Math.floor(fr()*4), t=fr(), nl=1.5+fr()*3;
+    c.fillStyle=`rgba(15,10,4,${(.25+fr()*.2).toFixed(3)})`;
+    if(side2===0)c.fillRect(t*W,0,nl,1.5+fr()*2);
+    else if(side2===1)c.fillRect(t*W,H-2-fr()*2,nl,2+fr()*2);
+    else if(side2===2)c.fillRect(0,t*H,1.5+fr()*2,nl);
+    else c.fillRect(W-2-fr()*2,t*H,2+fr()*2,nl);
+  }
+  /* soft wear at the handled corners */
+  for(const corner of [[0,0],[W,0],[0,H],[W,H]]){
+    if(fr()<.4)continue;
+    c.fillStyle=`rgba(255,248,230,${(.04+fr()*.05).toFixed(3)})`;
+    c.beginPath();c.arc(corner[0],corner[1],fw*(.35+fr()*.35),0,6.2832);c.fill();
+  }
+  /* style-specific flaws */
+  if(style==="gold"){
+    /* flaked leaf: the red bole shows through in worn islands */
+    const flakes=2+Math.round(fr()*4);
+    for(let i=0;i<flakes;i++){
+      let fx2=fr()*W, fy2=fr()*H, tries=0;
+      while(!inBand(fx2,fy2)&&tries++<8){fx2=fr()*W;fy2=fr()*H;}
+      if(!inBand(fx2,fy2))continue;
+      const r2=fw*(.07+fr()*.1);
+      c.fillStyle="rgba(112,46,22,0.5)";
+      for(let k=0;k<3;k++){
+        c.beginPath();
+        c.arc(fx2+(fr()-.5)*r2*1.4,fy2+(fr()-.5)*r2*1.4,r2*(.5+fr()*.5),0,6.2832);
+        c.fill();
+      }
+      c.fillStyle="rgba(56,22,8,0.3)";
+      c.beginPath();c.arc(fx2+r2*.4,fy2+r2*.3,r2*.35,0,6.2832);c.fill();
+    }
+  }else if(style==="white"){
+    /* gesso yellows where hands and sun have been */
+    const spots=3+Math.round(fr()*4);
+    for(let i=0;i<spots;i++){
+      let fx2=fr()*W, fy2=fr()*H, tries=0;
+      while(!inBand(fx2,fy2)&&tries++<8){fx2=fr()*W;fy2=fr()*H;}
+      if(!inBand(fx2,fy2))continue;
+      c.fillStyle=`rgba(196,172,116,${(.05+fr()*.06).toFixed(3)})`;
+      c.beginPath();c.arc(fx2,fy2,fw*(.3+fr()*.6),0,6.2832);c.fill();
+    }
+  }else if(style==="black"){
+    /* satin rubbed brighter where the frame is gripped */
+    const spots=2+Math.round(fr()*3);
+    for(let i=0;i<spots;i++){
+      let fx2=fr()*W, fy2=fr()*H, tries=0;
+      while(!inBand(fx2,fy2)&&tries++<8){fx2=fr()*W;fy2=fr()*H;}
+      if(!inBand(fx2,fy2))continue;
+      c.fillStyle=`rgba(140,128,100,${(.05+fr()*.05).toFixed(3)})`;
+      c.beginPath();c.arc(fx2,fy2,fw*(.3+fr()*.5),0,6.2832);c.fill();
+    }
+  }else if(style==="oak"){
+    /* a pale chip at one or two mitre corners */
+    for(const corner of [[fw*.5,fw*.5],[W-fw*.5,fw*.5],[fw*.5,H-fw*.5],[W-fw*.5,H-fw*.5]]){
+      if(fr()<.65)continue;
+      c.fillStyle="rgba(232,206,160,0.35)";
+      c.beginPath();c.arc(corner[0],corner[1],fw*(.08+fr()*.08),0,6.2832);c.fill();
+    }
+  }
+}
+
 function buildFramed(){
   if(state.frame==="none")return hi;
   const style=state.frame;
@@ -1578,121 +1811,8 @@ function buildFramed(){
   shade(ix,iy,ix+sh,iy,false);
   shade(ix+iw,iy,ix+iw-sh,iy,false);
 
-  /* four mitred moulding sides */
-  side(c,[[0,0],[W,0],[W-fw,fw],[fw,fw]],          frameGradient(c,style,0,0,0,fw));
-  side(c,[[0,H],[W,H],[W-fw,H-fw],[fw,H-fw]],      frameGradient(c,style,0,H,0,H-fw));
-  side(c,[[0,0],[fw,fw],[fw,H-fw],[0,H]],          frameGradient(c,style,0,0,fw,0));
-  side(c,[[W,0],[W,H],[W-fw,H-fw],[W-fw,fw]],      frameGradient(c,style,W,0,W-fw,0));
-
-  /* ---- material texture, clipped inside each mitred side ---- */
-  const sides2=[
-    {q:[[0,0],[W,0],[W-fw,fw],[fw,fw]],     b:[0,0,W,fw],    horiz:true},
-    {q:[[0,H],[W,H],[W-fw,H-fw],[fw,H-fw]], b:[0,H-fw,W,fw], horiz:true},
-    {q:[[0,0],[fw,fw],[fw,H-fw],[0,H]],     b:[0,0,fw,H],    horiz:false},
-    {q:[[W,0],[W,H],[W-fw,H-fw],[W-fw,fw]], b:[W-fw,0,fw,H], horiz:false}
-  ];
-  for(const sd of sides2){
-    c.save();
-    c.beginPath();
-    c.moveTo(sd.q[0][0],sd.q[0][1]);
-    for(let i=1;i<4;i++)c.lineTo(sd.q[i][0],sd.q[i][1]);
-    c.closePath();
-    c.clip();
-    const bx=sd.b[0],by=sd.b[1],bw=sd.b[2],bh=sd.b[3];
-    const along=sd.horiz?bw:bh, across=sd.horiz?bh:bw;
-    if(style==="oak"){
-      /* long wavy grain running the length of the moulding */
-      const strands=Math.round(across/3);
-      for(let k=0;k<strands;k++){
-        const base=Math.random()*across;
-        const amp=across*(.03+Math.random()*.1);
-        const fr2=.003+Math.random()*.01;
-        const ph=Math.random()*6.28;
-        c.fillStyle=Math.random()<.45
-          ?`rgba(82,58,28,${(.03+Math.random()*.05).toFixed(3)})`
-          :`rgba(242,214,168,${(.04+Math.random()*.07).toFixed(3)})`;
-        const th=Math.random()<.18?2.4:1.2;
-        for(let p=0;p<along;p+=3){
-          const off=base+Math.sin(p*fr2+ph)*amp;
-          if(sd.horiz)c.fillRect(bx+p,by+off,3,th);
-          else c.fillRect(bx+off,by+p,th,3);
-        }
-      }
-      /* the occasional knot */
-      const knots=Math.max(0,Math.round(along/(fw*16)-Math.random()));
-      for(let k=0;k<knots;k++){
-        const kp=Math.random()*along, kq=across*(.25+Math.random()*.5);
-        const kx=sd.horiz?bx+kp:bx+kq, ky=sd.horiz?by+kq:by+kp;
-        for(let rr2=1;rr2<=4;rr2++){
-          c.strokeStyle=`rgba(58,38,16,${(.16-rr2*.025).toFixed(3)})`;
-          c.lineWidth=1.4;
-          c.beginPath();
-          c.ellipse(kx,ky,rr2*fw*.05*(sd.horiz?1.8:1),rr2*fw*.05*(sd.horiz?1:1.8),0,0,6.2832);
-          c.stroke();
-        }
-      }
-    }else if(style==="gold"){
-      /* gold leaf laid in squares: seams, each leaf its own cast, patina */
-      const leaf=fw*1.6;
-      for(let p=Math.random()*leaf;p<along;p+=leaf*(0.85+Math.random()*.3)){
-        c.fillStyle="rgba(64,42,10,0.16)";
-        if(sd.horiz)c.fillRect(bx+p,by,1.6,bh); else c.fillRect(bx,by+p,bw,1.6);
-        c.fillStyle="rgba(255,240,180,0.10)";
-        if(sd.horiz)c.fillRect(bx+p+1.6,by,1.2,bh); else c.fillRect(bx,by+p+1.6,bw,1.2);
-        c.fillStyle=Math.random()<.5
-          ?`rgba(140,100,30,${(Math.random()*.07).toFixed(3)})`
-          :`rgba(255,236,170,${(Math.random()*.06).toFixed(3)})`;
-        if(sd.horiz)c.fillRect(bx+p,by,leaf,bh); else c.fillRect(bx,by+p,bw,leaf);
-      }
-      const sp2=Math.round(along*across/900);
-      for(let k=0;k<sp2;k++){
-        c.fillStyle=Math.random()<.5?"rgba(255,243,192,.2)":"rgba(86,56,12,.2)";
-        c.fillRect(bx+Math.random()*bw,by+Math.random()*bh,1.6,1.6);
-      }
-      /* red bole ground showing through at the worn corners */
-      c.fillStyle="rgba(112,46,22,0.14)";
-      for(const [cx2,cy2] of [[bx,by],[bx+bw,by],[bx,by+bh],[bx+bw,by+bh]]){
-        c.beginPath();c.arc(cx2,cy2,fw*.7,0,6.2832);c.fill();
-      }
-    }else if(style==="black"){
-      /* satin black, brushed along its length, with a quiet sheen */
-      const streaks=Math.round(across/2.5);
-      for(let k=0;k<streaks;k++){
-        const base=Math.random()*across;
-        c.fillStyle=Math.random()<.5
-          ?`rgba(96,88,68,${(.025+Math.random()*.045).toFixed(3)})`
-          :`rgba(0,0,0,${(.05+Math.random()*.07).toFixed(3)})`;
-        if(sd.horiz)c.fillRect(bx,by+base,bw,1); else c.fillRect(bx+base,by,1,bh);
-      }
-    }else{
-      /* white gesso: faint warm brush texture */
-      const streaks=Math.round(across/3);
-      for(let k=0;k<streaks;k++){
-        const base=Math.random()*across;
-        c.fillStyle=Math.random()<.5
-          ?`rgba(186,174,150,${(.03+Math.random()*.04).toFixed(3)})`
-          :`rgba(255,252,244,${(.04+Math.random()*.04).toFixed(3)})`;
-        if(sd.horiz)c.fillRect(bx,by+base,bw,1); else c.fillRect(bx+base,by,1,bh);
-      }
-    }
-    c.restore();
-  }
-  /* carved profile: burnished outer ridge, shadowed inner step */
-  c.strokeStyle="rgba(255,248,228,0.16)";
-  c.lineWidth=Math.max(1.5,fw*.06);
-  c.strokeRect(fw*.14,fw*.14,W-fw*.28,H-fw*.28);
-  c.strokeStyle="rgba(0,0,0,0.22)";
-  c.lineWidth=Math.max(1.5,fw*.05);
-  c.strokeRect(fw*.8,fw*.8,W-fw*1.6,H-fw*1.6);
-  /* mitre seams */
-  c.strokeStyle="rgba(0,0,0,.28)";
-  c.lineWidth=Math.max(1.5,fw*.018);
-  c.beginPath();
-  c.moveTo(0,0);c.lineTo(fw,fw);
-  c.moveTo(W,0);c.lineTo(W-fw,fw);
-  c.moveTo(0,H);c.lineTo(fw,H-fw);
-  c.moveTo(W,H);c.lineTo(W-fw,H-fw);
-  c.stroke();
+  /* moulding: bases, texture, profile, seams, wear — shared painter */
+  paintFrameMaterial(c,W,H,fw,style,mulberry32(state.frameSeed));
   return out;
 }
 
@@ -1742,6 +1862,7 @@ function buildChips(){
       setChoice("frame",k,frWrap);
       const wrap=document.getElementById("framewrap");
       wrap.className="framewrap f-"+k;
+      wrap.style.backgroundImage="";
       layoutView();
     });
     frWrap.appendChild(b);
